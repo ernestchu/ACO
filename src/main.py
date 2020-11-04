@@ -4,14 +4,15 @@ import pygame as pg
 import random
 from pygame.locals import QUIT
 
-def initialize(ants, num_ant=100):
+def initialize(num_ant, *args):
     '''
-    ants: pg.sprite.Group
     num_ant: int
+    args: pg.sprite.Group[]
     '''
     for i in range(num_ant):
-        ants.add(objects.Ant((random.randrange(0, 800), random.randrange(0, 800)), "scout"))
-
+        args[0].add(objects.Ant((random.randrange(0, 800), random.randrange(0, 800)), "scout"))
+    args[1].add(objects.Food((random.randrange(0, 800), random.randrange(0, 800)), 50))
+    args[2].add(objects.Nest((random.randrange(0, 800), random.randrange(0, 800)), 50))
 
 
 pg.init()
@@ -24,8 +25,12 @@ pg.display.update()
 
 
 ants = pg.sprite.Group()
-initialize(ants)
+foods = pg.sprite.Group()
+nests = pg.sprite.Group()
+initialize(100, ants, foods, nests)
 ants.draw(surface)
+foods.draw(surface)
+nests.draw(surface)
 pg.display.update()
 
 while True:
@@ -37,4 +42,6 @@ while True:
     ants.update()
     ants.clear(surface, background)
     ants.draw(surface)
+    foods.draw(surface)
+    nests.draw(surface)
     pg.display.update()
