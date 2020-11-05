@@ -2,8 +2,8 @@ import pygame as pg
 import random
 import numpy as np
 
-step = 15
-wait = 80
+step = 10
+wait = 0
 world_size = 800
 num_ants = 1000
 decay_rate = 0.8
@@ -28,19 +28,23 @@ class Ant(pg.sprite.Sprite):
         self.status = status
         self.route = [self.rect.center]
         self.tour_len = 1e10
-    def update(self, foods):
+    def update(self, foods, pheromone):
         if self.status == 'finding':
             '''encourage ants to move out of their nest'''
             possible_cord = []
-            [possible_cord.append(cord) for i in map(lambda x: [(x, c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
-            possible_cord.remove((0, 0))
             x, y = self.rect.center
-            choice = random.choice(possible_cord)
-            x += choice[0]
-            y += choice[1]
-            self.rect.center = (x, y)
+            [possible_cord.append(cord) for i in map(lambda z: [(x+z, y+c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
+            possible_cord.remove((x, y))
+            x = [cord[0] for cord in possible_cord]
+            y = [cord[0] for cord in possible_cord]
+            try:
+                choice = random.choices(possible_cord, pheromone.table[x, y]+1)
+                self.rect.center = choice[0]
+            except IndexError:
+                choice = random.choice(possible_cord)
+                self.rect.center = choice
             self.route.append(self.rect.center)
-            if x>=800 or x<0 or y>=800 or y < 0:
+            if self.rect.center[0]>=800 or self.rect.center[0]<0 or self.rect.center[1]>=800 or self.rect.center[1] < 0:
                 self.kill()
                 return
         elif self.status == 'found':

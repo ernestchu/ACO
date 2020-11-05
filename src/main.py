@@ -57,7 +57,7 @@ while True:
                  start = not start
     if start:
         surface.blit(background, (0, 0))
-        ants.update(foods)
+        ants.update(foods, pheromone)
         pheromone.update(ants)
         ants.clear(surface, background)
         draw_pheromone(pheromone, surface)
