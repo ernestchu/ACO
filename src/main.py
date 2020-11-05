@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 import objects
 import pygame as pg
 import random
@@ -9,7 +10,7 @@ def initialize(num_ant, *args):
     num_ant: int
     args: pg.sprite.Group[]
     '''
-    nest_x, nest_y = random.randrange(0, objects.world_size), random.randrange(0, objects.world_size)
+    nest_x, nest_y = objects.world_size/2, objects.world_size/2
     for i in range(num_ant):
         args[0].add(objects.Ant((nest_x, nest_y), "finding"))
     args[1].add(objects.Food((random.randrange(0, objects.world_size), random.randrange(0, objects.world_size)), 50))
@@ -19,7 +20,8 @@ def draw_pheromone(pheromone, surface):
     table = pheromone.table
     for i in range(objects.world_size):
         for j in range(objects.world_size):
-            intensity = table[i][j]
+            intensity = table[i][j]*5e6
+            intensity = 255 if intensity>255 else intensity
             if intensity != 0:
                 sub_surf = pg.Surface(pg.Rect(i, j, objects.step, objects.step).size, pg.SRCALPHA)
                 pg.draw.rect(sub_surf, (0, 255, 0, intensity), sub_surf.get_rect())
@@ -55,7 +57,8 @@ while True:
                  start = not start
     if start:
         surface.blit(background, (0, 0))
-        ants.update(foods, pheromone)
+        ants.update(foods)
+        pheromone.update(ants)
         ants.clear(surface, background)
         draw_pheromone(pheromone, surface)
         foods.draw(surface)
