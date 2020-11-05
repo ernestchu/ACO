@@ -27,7 +27,7 @@ class Ant(pg.sprite.Sprite):
         self.rect.center = position
         self.status = status
         self.route = [self.rect.center]
-        self.tour_len = 0
+        self.tour_len = 1e10
     def update(self, foods):
         if self.status == 'finding':
             '''encourage ants to move out of their nest'''
@@ -40,12 +40,16 @@ class Ant(pg.sprite.Sprite):
             y += choice[1]
             self.rect.center = (x, y)
             self.route.append(self.rect.center)
+            if x>=800 or x<0 or y>=800 or y < 0:
+                self.kill()
+                return
         elif self.status == 'found':
             try:
                 self.rect.center = self.route.pop()
             except IndexError: #returned nest
+                self.image = image.ant
                 self.status == 'finding'
-                self.tour_len = 0
+                self.tour_len = 1e10
 
         for food in foods:
             if pg.sprite.collide_rect(self, food):
@@ -99,33 +103,3 @@ class Pheromone:
                 sum[x][y] += 1/ant.tour_len
         τ = (1-ρ)*τ + ρ*sum/num_ants
         self.table = τ
-        # for x in range(world_size):
-        #     for y in range(world_size):
-        #         τ, ρ, sum = self.table[x][y], decay_rate, 0
-        #         # for ant in ants:
-        #         #     if ant.rect.center == (x, y) and ant.status == 'found':
-        #         #         sum += 1/ant.tour_len
-        #         #     else:
-        #         #         continue
-        #         τ = (1-ρ)*τ + ρ*sum
-        #         ###Pheromone Decay Formula###
-        #         self.table[x][y] = τ
-        #         #############################
-
-
-        # x, y = ant.rect.center
-        # try:
-        #     τ, ρ = self.table[x][y], decay_rate
-        # except IndexError: #ant ran out of the world
-        #     ant.kill()
-        #     return
-        # try: #found
-        #     L = 1/ant.tour_len
-        # except ZeroDivisionError: #still finding
-        #     L = 0
-        # ###########Pheromone Decay Formula##############
-        # τ = (1-ρ)*τ + ρ*(L)/num_ants
-        # ################################################
-        # self.table[x][y] = τ
-        # if self.table[x][y] > 255:
-        #     self.table[x][y] = 255

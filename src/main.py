@@ -18,14 +18,14 @@ def initialize(num_ant, *args):
 
 def draw_pheromone(pheromone, surface):
     table = pheromone.table
-    for i in range(objects.world_size):
-        for j in range(objects.world_size):
-            intensity = table[i][j]*5e6
-            intensity = 255 if intensity>255 else intensity
-            if intensity != 0:
-                sub_surf = pg.Surface(pg.Rect(i, j, objects.step, objects.step).size, pg.SRCALPHA)
-                pg.draw.rect(sub_surf, (0, 255, 0, intensity), sub_surf.get_rect())
-                surface.blit(sub_surf, (i, j, objects.step, objects.step))
+    intensity = np.log(table+1)*5e6
+    intensity[intensity>255] = 255
+    x, y = np.where(intensity > 10)
+    for i in x:
+        for j in y:
+            sub_surf = pg.Surface(pg.Rect(i, j, objects.step, objects.step).size, pg.SRCALPHA)
+            pg.draw.rect(sub_surf, (0, 255, 0, intensity[i][j]), sub_surf.get_rect())
+            surface.blit(sub_surf, (i, j, objects.step, objects.step))
 
 pg.init()
 start = True
