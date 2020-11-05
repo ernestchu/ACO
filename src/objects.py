@@ -4,7 +4,7 @@ import random
 step = 15
 wait = 80
 world_size = 800
-num_ants = 100
+num_ants = 1000
 
 class image:
     ant = pg.transform.scale(pg.image.load('images/ant.png'), (20, 20))
@@ -25,7 +25,7 @@ class Ant(pg.sprite.Sprite):
         self.rect.center = position
         self.status = status
         self.route = [self.rect.center]
-    def update(self, foods):
+    def update(self, foods, pheromone):
         if self.status == 'finding':
             '''encourage ants to move out of their nest'''
             possible_cord = []
@@ -39,6 +39,7 @@ class Ant(pg.sprite.Sprite):
             self.route.append(self.rect.center)
         elif self.status == 'found':
             try:
+                pheromone.table[self.rect.center[0]][self.rect.center[1]] = 5
                 self.rect.center = self.route.pop()
             except IndexError:
                 self.status == 'finding'
@@ -87,4 +88,3 @@ class Obstacle(pg.sprite.Sprite):
 class Pheromone:
     def __init__(self):
         self.table = [[0]*world_size for _ in range(world_size)]
-        self.table[500][500] = 5

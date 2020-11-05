@@ -20,9 +20,9 @@ def draw_pheromone(pheromone, surface):
     for i in range(objects.world_size):
         for j in range(objects.world_size):
             if table[i][j] != 0:
-                sub_surf = pg.Surface(pg.Rect(i, j, 100, 100).size, pg.SRCALPHA)
+                sub_surf = pg.Surface(pg.Rect(i, j, objects.step, objects.step).size, pg.SRCALPHA)
                 pg.draw.rect(sub_surf, (0, 255, 0, 100), sub_surf.get_rect())
-                surface.blit(sub_surf, (i, j, 100, 100))
+                surface.blit(sub_surf, (i, j, objects.step, objects.step))
 
 pg.init()
 start = True
@@ -54,7 +54,7 @@ while True:
                  start = not start
     if start:
         surface.blit(background, (0, 0))
-        ants.update(foods)
+        ants.update(foods, pheromone)
         ants.clear(surface, background)
         draw_pheromone(pheromone, surface)
         foods.draw(surface)
