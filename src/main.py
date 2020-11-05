@@ -19,9 +19,10 @@ def draw_pheromone(pheromone, surface):
     table = pheromone.table
     for i in range(objects.world_size):
         for j in range(objects.world_size):
-            if table[i][j] != 0:
+            intensity = table[i][j]
+            if intensity != 0:
                 sub_surf = pg.Surface(pg.Rect(i, j, objects.step, objects.step).size, pg.SRCALPHA)
-                pg.draw.rect(sub_surf, (0, 255, 0, 100), sub_surf.get_rect())
+                pg.draw.rect(sub_surf, (0, 255, 0, intensity), sub_surf.get_rect())
                 surface.blit(sub_surf, (i, j, objects.step, objects.step))
 
 pg.init()

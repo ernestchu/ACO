@@ -39,7 +39,7 @@ class Ant(pg.sprite.Sprite):
             self.route.append(self.rect.center)
         elif self.status == 'found':
             try:
-                pheromone.table[self.rect.center[0]][self.rect.center[1]] = 5
+                pheromone.update(self)
                 self.rect.center = self.route.pop()
             except IndexError:
                 self.status == 'finding'
@@ -88,3 +88,8 @@ class Obstacle(pg.sprite.Sprite):
 class Pheromone:
     def __init__(self):
         self.table = [[0]*world_size for _ in range(world_size)]
+    def update(self, ant):
+        x, y = ant.rect.center
+        self.table[x][y] += 50
+        if self.table[x][y] > 255:
+            self.table[x][y] = 255
