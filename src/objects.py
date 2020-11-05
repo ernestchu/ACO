@@ -13,24 +13,37 @@ class Ant(pg.sprite.Sprite):
     '''
     Object Ant is an ant.
     '''
-    def __init__(self, position, role):
+    def __init__(self, position, status):
         super().__init__()
         self.image = image.ant
         self.rect = self.image.get_rect()
         self.rect.center = position
-        self.role = role
-        self.route = []
-    def update(self):
+        self.status = status
+        self.route = [self.rect.center]
+    def update(self, foods):
         '''encourage ants to move out of their nest'''
-        step = 7
-        possible_cord = []
-        [possible_cord.append(cord) for i in map(lambda x: [(x, c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
-        possible_cord.remove((0, 0))
-        x, y = self.rect.center
-        choice = random.choice(possible_cord)
-        x += choice[0]
-        y += choice[1]
-        self.rect.center = (x, y)
+        if self.status == 'finding':
+            step = 15
+            possible_cord = []
+            [possible_cord.append(cord) for i in map(lambda x: [(x, c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
+            possible_cord.remove((0, 0))
+            x, y = self.rect.center
+            choice = random.choice(possible_cord)
+            x += choice[0]
+            y += choice[1]
+            self.rect.center = (x, y)
+            self.route.append(self.rect.center)
+        elif self.status == 'found':
+            try:
+                self.rect.center = self.route.pop()
+            except IndexError:
+                self.status == 'finding'
+
+        for food in foods:
+            if pg.sprite.collide_rect(self, food):
+                self.image = image.ant_with_food
+                self.status = 'found'
+
 
 class Food(pg.sprite.Sprite):
     '''

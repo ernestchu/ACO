@@ -11,7 +11,7 @@ def initialize(num_ant, *args):
     '''
     nest_x, nest_y = random.randrange(0, 800), random.randrange(0, 800)
     for i in range(num_ant):
-        args[0].add(objects.Ant((nest_x, nest_y), "scout"))
+        args[0].add(objects.Ant((nest_x, nest_y), "finding"))
     args[1].add(objects.Food((random.randrange(0, 800), random.randrange(0, 800)), 50))
     args[2].add(objects.Nest((nest_x, nest_y), 50))
 
@@ -44,9 +44,10 @@ while True:
             if event.key == pg.K_SPACE:
                  start = not start
     if start:
-        ants.update()
+        ants.update(foods)
         ants.clear(surface, background)
         ants.draw(surface)
         foods.draw(surface)
         nests.draw(surface)
         pg.display.update()
+        pg.time.wait(80)
