@@ -1,6 +1,11 @@
 import pygame as pg
 import random
 
+step = 15
+wait = 80
+world_size = 800
+num_ants = 100
+
 class image:
     ant = pg.transform.scale(pg.image.load('images/ant.png'), (20, 20))
     ant_with_food = pg.transform.scale(pg.image.load('images/ant_with_food.png'), (20, 20))
@@ -21,9 +26,8 @@ class Ant(pg.sprite.Sprite):
         self.status = status
         self.route = [self.rect.center]
     def update(self, foods):
-        '''encourage ants to move out of their nest'''
         if self.status == 'finding':
-            step = 15
+            '''encourage ants to move out of their nest'''
             possible_cord = []
             [possible_cord.append(cord) for i in map(lambda x: [(x, c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
             possible_cord.remove((0, 0))
@@ -79,3 +83,8 @@ class Obstacle(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = position
         self.size = size
+
+class Pheromone:
+    def __init__(self):
+        self.table = [[0]*world_size for _ in range(world_size)]
+        self.table[500][500] = 5
