@@ -6,7 +6,7 @@ step = 10
 wait = 80
 world_size = 800
 num_ants = 1000
-decay_rate = 0.1
+decay_rate = 0.4
 
 class image:
     ant = pg.transform.scale(pg.image.load('images/ant.png'), (20, 20))
@@ -29,20 +29,36 @@ class Ant(pg.sprite.Sprite):
         self.route = [self.rect.center]
         self.tour_len = 1e10
     def update(self, foods, pheromone):
+        def pheromone_affinity(possible_cord, pheromone):
+            def centroid(matrix):
+                '''
+                find the center of mass of the matrix
+                return coordinate(x, y)
+                '''
+                x_mean = matrix.mean(axis=0)
+                y_mean = matrix.mean(axis=1)
+                if x_mean.sum() == 0:
+                    return None
+                x_range = np.arange(matrix.shape[0])
+                y_range = np.arange(matrix.shape[1])
+                c_x = np.average(x_range, weights=y_mean)
+                c_y = np.average(y_range, weights=x_mean)
+                return (c_x, c_y)
+            c = centroid(pheromone.table)
+            if c:
+                print(c)
+
         if self.status == 'finding':
             '''encourage ants to move out of their nest'''
             possible_cord = []
             x, y = self.rect.center
             [possible_cord.append(cord) for i in map(lambda z: [(x+z, y+c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
             possible_cord.remove((x, y))
-            x = [cord[0] for cord in possible_cord]
-            y = [cord[0] for cord in possible_cord]
-            try:
-                choice = random.choices(possible_cord, pheromone.table[x, y]+1)
-                self.rect.center = choice[0]
-            except IndexError:
-                choice = random.choice(possible_cord)
-                self.rect.center = choice
+            # x = [cord[0] for cord in possible_cord]
+            # y = [cord[0] for cord in possible_cord]
+            pheromone_affinity(possible_cord, pheromone)
+            choice = random.choice(possible_cord)
+            self.rect.center = choice
             self.route.append(self.rect.center)
             if self.rect.center[0]>=800 or self.rect.center[0]<0 or self.rect.center[1]>=800 or self.rect.center[1] < 0:
                 self.kill()
