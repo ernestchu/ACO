@@ -1,6 +1,7 @@
 import pygame as pg
 import random
 import numpy as np
+from scipy.ndimage import center_of_mass
 
 step = 10
 wait = 80
@@ -44,9 +45,12 @@ class Ant(pg.sprite.Sprite):
                 c_x = np.average(x_range, weights=y_mean)
                 c_y = np.average(y_range, weights=x_mean)
                 return (c_x, c_y)
-            c = centroid(pheromone.table)
-            if c:
+            if pheromone.table.all == 0:
+                c = None
+            else:
+                c = center_of_mass(pheromone.table)
                 print(c)
+
 
         if self.status == 'finding':
             '''encourage ants to move out of their nest'''
