@@ -1,12 +1,11 @@
 import pygame as pg
 import random
 import numpy as np
-from scipy.ndimage import center_of_mass
 
 step = 10
-wait = 80
+wait = 10
 world_size = 800
-num_ants = 1000
+num_ants = 100
 decay_rate = 0.4
 
 class image:
@@ -31,27 +30,11 @@ class Ant(pg.sprite.Sprite):
         self.tour_len = 1e10
     def update(self, foods, pheromone):
         def pheromone_affinity(possible_cord, pheromone):
-            def centroid(matrix):
-                '''
-                find the center of mass of the matrix
-                return coordinate(x, y)
-                '''
-                x_mean = matrix.mean(axis=0)
-                y_mean = matrix.mean(axis=1)
-                if x_mean.sum() == 0:
-                    return None
-                x_range = np.arange(matrix.shape[0])
-                y_range = np.arange(matrix.shape[1])
-                c_x = np.average(x_range, weights=y_mean)
-                c_y = np.average(y_range, weights=x_mean)
-                return (c_x, c_y)
-            if pheromone.table.all == 0:
-                c = None
+            if pheromone.centroid:
+                p = np.array(possible_cord)
+                return 1/np.abs(p-pheromone.centroid).sum(axis=1)
             else:
-                c = center_of_mass(pheromone.table)
-                print(c)
-
-
+                return [1]*8
         if self.status == 'finding':
             '''encourage ants to move out of their nest'''
             possible_cord = []
@@ -60,9 +43,8 @@ class Ant(pg.sprite.Sprite):
             possible_cord.remove((x, y))
             # x = [cord[0] for cord in possible_cord]
             # y = [cord[0] for cord in possible_cord]
-            pheromone_affinity(possible_cord, pheromone)
-            choice = random.choice(possible_cord)
-            self.rect.center = choice
+            choice = random.choices(possible_cord, weights=pheromone_affinity(possible_cord, pheromone))
+            self.rect.center = choice[0]
             self.route.append(self.rect.center)
             if self.rect.center[0]>=800 or self.rect.center[0]<0 or self.rect.center[1]>=800 or self.rect.center[1] < 0:
                 self.kill()
@@ -119,6 +101,7 @@ class Obstacle(pg.sprite.Sprite):
 class Pheromone:
     def __init__(self):
         self.table = np.zeros((world_size, world_size))
+        self.centroid = None
     def update(self, ants):
         τ, ρ, sum = self.table, decay_rate, np.zeros((world_size, world_size))
         gaussian_kernel = np.array([
@@ -132,3 +115,17 @@ class Pheromone:
                 sum[x-1:x+2, y-1:y+2] += 1/ant.tour_len*gaussian_kernel
         τ = (1-ρ)*τ + ρ*sum/num_ants
         self.table = τ
+        self.update_centroid()
+    def update_centroid(self):
+        '''
+        find the center of mass of the table
+        '''
+        x_mean = self.table.mean(axis=0)
+        y_mean = self.table.mean(axis=1)
+        if x_mean.sum() == 0:
+            return None
+        x_range = np.arange(self.table.shape[0])
+        y_range = np.arange(self.table.shape[1])
+        c_x = np.average(x_range, weights=y_mean)
+        c_y = np.average(y_range, weights=x_mean)
+        self.centroid = (c_x, c_y)
