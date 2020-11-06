@@ -3,10 +3,11 @@ import random
 import numpy as np
 
 step = 10
-wait = 10
+wait = 0
 world_size = 800
-num_ants = 100
-decay_rate = 0.4
+num_ants = 1000
+decay_rate = 0.05
+penalty_away_food = 100000
 
 class image:
     ant = pg.transform.scale(pg.image.load('images/ant.png'), (20, 20))
@@ -41,8 +42,6 @@ class Ant(pg.sprite.Sprite):
             x, y = self.rect.center
             [possible_cord.append(cord) for i in map(lambda z: [(x+z, y+c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
             possible_cord.remove((x, y))
-            # x = [cord[0] for cord in possible_cord]
-            # y = [cord[0] for cord in possible_cord]
             choice = random.choices(possible_cord, weights=pheromone_affinity(possible_cord, pheromone))
             self.rect.center = choice[0]
             self.route.append(self.rect.center)
@@ -52,6 +51,7 @@ class Ant(pg.sprite.Sprite):
         elif self.status == 'found':
             try:
                 self.rect.center = self.route.pop()
+                self.tour_len += (1/self.tour_len)*penalty_away_food
             except IndexError: #returned nest
                 self.image = image.ant
                 self.status == 'finding'
@@ -112,7 +112,8 @@ class Pheromone:
         for ant in ants:
             if ant.status == 'found':
                 x, y = ant.rect.center
-                sum[x-1:x+2, y-1:y+2] += 1/ant.tour_len*gaussian_kernel
+                # sum[x-1:x+2, y-1:y+2] += 1/ant.tour_len*gaussian_kernel
+                sum[x, y] += 1/ant.tour_len
         τ = (1-ρ)*τ + ρ*sum/num_ants
         self.table = τ
         self.update_centroid()
