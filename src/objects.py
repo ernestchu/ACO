@@ -3,10 +3,10 @@ import random
 import numpy as np
 
 step = 10
-wait = 0
+wait = 80
 world_size = 800
 num_ants = 1000
-decay_rate = 0.8
+decay_rate = 0.1
 
 class image:
     ant = pg.transform.scale(pg.image.load('images/ant.png'), (20, 20))
