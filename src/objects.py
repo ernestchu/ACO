@@ -101,9 +101,14 @@ class Pheromone:
         self.table = np.zeros((world_size, world_size))
     def update(self, ants):
         τ, ρ, sum = self.table, decay_rate, np.zeros((world_size, world_size))
+        gaussian_kernel = np.array([
+        [0.045, 0.122, 0.045],
+        [0.122, 0.332, 0.122],
+        [0.045, 0.122, 0.045]
+        ])
         for ant in ants:
             if ant.status == 'found':
                 x, y = ant.rect.center
-                sum[x][y] += 1/ant.tour_len
+                sum[x-1:x+2, y-1:y+2] += 1/ant.tour_len*gaussian_kernel
         τ = (1-ρ)*τ + ρ*sum/num_ants
         self.table = τ

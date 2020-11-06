@@ -18,9 +18,10 @@ def initialize(num_ant, *args):
 
 def draw_pheromone(pheromone, surface):
     table = pheromone.table
-    intensity = np.log(table+1)*5e6
+    intensity = (np.exp(table)-1)*1e7
     intensity[intensity>255] = 255
     x, y = np.where(intensity > 10)
+    print(intensity[x, y])
     for i in x:
         for j in y:
             sub_surf = pg.Surface(pg.Rect(i, j, objects.step, objects.step).size, pg.SRCALPHA)
