@@ -1,13 +1,14 @@
 import pygame as pg
 import random
 import numpy as np
+from scipy import stats
 
 step = 10
 wait = 0
 world_size = 800
-num_ants = 1000
-decay_rate = 0.05
-penalty_away_food = 100000
+num_ants = 100
+decay_rate = 0.01
+penalty_away_food = 0.1
 
 class image:
     ant = pg.transform.scale(pg.image.load('images/ant.png'), (20, 20))
@@ -29,13 +30,21 @@ class Ant(pg.sprite.Sprite):
         self.status = status
         self.route = [self.rect.center]
         self.tour_len = 1e10
+        self.penalty = 1
     def update(self, foods, pheromone):
         def pheromone_affinity(possible_cord, pheromone):
             if pheromone.centroid:
                 p = np.array(possible_cord)
-                return 1/np.abs(p-pheromone.centroid).sum(axis=1)
+                p = np.abs(p-pheromone.centroid).sum(axis=1)
+                p = p.max() - p
+                return p
             else:
                 return [1]*8
+            # arr = np.array(possible_cord)
+            # try:
+            #     return pheromone.table[tuple(arr.T)]*1000+1
+            # except IndexError:
+            #     return [1]*8
         if self.status == 'finding':
             '''encourage ants to move out of their nest'''
             possible_cord = []
@@ -51,11 +60,12 @@ class Ant(pg.sprite.Sprite):
         elif self.status == 'found':
             try:
                 self.rect.center = self.route.pop()
-                self.tour_len += (1/self.tour_len)*penalty_away_food
+                self.penalty *= (1-penalty_away_food)
             except IndexError: #returned nest
                 self.image = image.ant
-                self.status == 'finding'
+                self.status = 'finding'
                 self.tour_len = 1e10
+                self.penalty = 1
 
         for food in foods:
             if pg.sprite.collide_rect(self, food):
@@ -103,17 +113,21 @@ class Pheromone:
         self.table = np.zeros((world_size, world_size))
         self.centroid = None
     def update(self, ants):
+        def gaussian_kernel(size, sigma):
+            x =np.linspace(-sigma, sigma, size+1)
+            kernel1d = np.diff(stats.norm.cdf(x))
+            kernel2d = np.outer(kernel1d, kernel1d)
+            return kernel2d/kernel2d.sum()
         τ, ρ, sum = self.table, decay_rate, np.zeros((world_size, world_size))
-        gaussian_kernel = np.array([
-        [0.045, 0.122, 0.045],
-        [0.122, 0.332, 0.122],
-        [0.045, 0.122, 0.045]
-        ])
         for ant in ants:
             if ant.status == 'found':
                 x, y = ant.rect.center
-                # sum[x-1:x+2, y-1:y+2] += 1/ant.tour_len*gaussian_kernel
-                sum[x, y] += 1/ant.tour_len
+                try:
+                    k = 1
+                    sum[x-(k//2)*step:x+(k//2+1)*step, y-(k//2)*step:y+(k//2+1)*step] += 1/ant.tour_len*gaussian_kernel(k*step, 1)*ant.penalty
+                except ValueError:
+                    print('border')
+                # sum[x, y] += 1/ant.tour_len
         τ = (1-ρ)*τ + ρ*sum/num_ants
         self.table = τ
         self.update_centroid()

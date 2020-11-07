@@ -22,12 +22,13 @@ def draw_pheromone(pheromone, surface):
     intensity = (table-table.min())/table.max()-table.min()
     intensity = intensity*255
     #choose only half of them to draw
-    x, y = np.where(intensity > 127.5)
+    x, y = np.where(intensity >= 127.5)
     for i, j in zip(x, y):
         #expand from (128-255) to (0-255)
         opacity = intensity[i, j]*2-255
         sub_surf = pg.Surface(pg.Rect(i, j, objects.step, objects.step).size, pg.SRCALPHA)
         pg.draw.rect(sub_surf, (0, 255, 0, opacity), sub_surf.get_rect())
+        # surface.blit(sub_surf, (i, j, objects.step, objects.step))
         surface.blit(sub_surf, (i, j, objects.step, objects.step))
 
 pg.init()
