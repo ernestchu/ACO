@@ -40,59 +40,30 @@ class Ant(pg.sprite.Sprite):
                 return p
             else:
                 return np.array([1]*8)
-        if self.status == 'finding':
-            '''encourage ants to move out of their nest'''
-            possible_cord = []
-            x, y = self.rect.center
-            [possible_cord.append(cord) for i in map(lambda z: [(z, c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
-            possible_cord.remove((0, 0))
-            possible_cord = np.array(possible_cord)
-            weights = pheromone_affinity(possible_cord, pheromone_food, np.array([x, y]))
-            while weights.any()!=0:
-                choice = random.choices(possible_cord, weights)
-                index = np.where(possible_cord==choice)[0]
-                # if pheromone_food.centroid and ((x-pheromone_food.centroid[0])**2 + (y-pheromone_food.centroid[1])**2)**(1/2) < 100:
-                #     c_x = choice[0][0]
-                #     c_y = choice[0][1]
-                # else:
-                c_x = 0.9*self.velocity[0]+smoothness*choice[0][0]
-                c_y = 0.9*self.velocity[1]+smoothness*choice[0][1]
-                self.velocity = (c_x, c_y)
-                self.rect.center = (x+self.velocity[0], y+self.velocity[1])
-                # print(weights)
-                weights[index] = 0
-                if not pg.sprite.spritecollideany(self, obstacles):
-                    break
-            if self.rect.center[0]>=800 or self.rect.center[0]<0 or self.rect.center[1]>=800 or self.rect.center[1] < 0:
-                self.kill()
-                return
-        elif self.status == 'found':
-            possible_cord = []
-            x, y = self.rect.center
-            [possible_cord.append(cord) for i in map(lambda z: [(z, c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
-            possible_cord.remove((0, 0))
-            possible_cord = np.array(possible_cord)
-            weights = pheromone_affinity(possible_cord, pheromone_nest, np.array([x, y]))
-            while weights.any()!=0:
-                choice = random.choices(possible_cord, weights)
-                index = np.where(possible_cord==choice)[0]
-                # if pheromone_food.centroid and ((x-pheromone_nest.centroid[0])**2 + (y-pheromone_nest.centroid[1])**2)**(1/2) < 100:
-                #     c_x = choice[0][0]
-                #     c_y = choice[0][1]
-                # else:
-                c_x = 0.9*self.velocity[0]+smoothness*choice[0][0]
-                c_y = 0.9*self.velocity[1]+smoothness*choice[0][1]
-                self.velocity = (c_x, c_y)
-                self.rect.center = (x+self.velocity[0], y+self.velocity[1])
-                # print(weights)
-                weights[index] = 0
-                if not pg.sprite.spritecollideany(self, obstacles):
-                    break
-            if self.rect.center[0]>=800 or self.rect.center[0]<0 or self.rect.center[1]>=800 or self.rect.center[1] < 0:
-                self.kill()
-                return
-
+        pheromone_dict = {'finding': pheromone_food, 'found': pheromone_nest}
+        '''encourage ants to move out of their nest'''
+        possible_cord = []
+        x, y = self.rect.center
+        [possible_cord.append(cord) for i in map(lambda z: [(z, c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
+        possible_cord.remove((0, 0))
+        possible_cord = np.array(possible_cord)
+        weights = pheromone_affinity(possible_cord, pheromone_dict[self.status], np.array([x, y]))
+        while weights.any()!=0:
+            choice = random.choices(possible_cord, weights)
+            index = np.where(possible_cord==choice)[0]
+            c_x = 0.9*self.velocity[0]+smoothness*choice[0][0]
+            c_y = 0.9*self.velocity[1]+smoothness*choice[0][1]
+            self.velocity = (c_x, c_y)
+            self.rect.center = (x+self.velocity[0], y+self.velocity[1])
+            weights[index] = 0
+            if not pg.sprite.spritecollideany(self, obstacles):
+                break
+        if self.rect.center[0]>=800 or self.rect.center[0]<0 or self.rect.center[1]>=800 or self.rect.center[1] < 0:
+            self.kill()
+            return
+            
         self.penalty *= (1-penalty_away)
+
         if self.status == 'finding':
             for food in foods:
                 if pg.sprite.collide_rect(self, food):
