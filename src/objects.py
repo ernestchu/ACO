@@ -2,13 +2,15 @@ import pygame as pg
 import random
 import numpy as np
 from scipy import stats
+from math import floor
 
 step = 10
-wait = 0
+wait = 20
 world_size = 800
 num_ants = 100
 decay_rate = 0.01
-penalty_away_food = 0.1
+penalty_away = 0.8
+smoothness = 0.2
 
 class image:
     ant = pg.transform.scale(pg.image.load('images/ant.png'), (20, 20))
@@ -27,52 +29,84 @@ class Ant(pg.sprite.Sprite):
         self.image = image.ant
         self.rect = self.image.get_rect()
         self.rect.center = position
+        self.velocity = (0, 0)
         self.status = status
-        self.route = [self.rect.center]
-        self.tour_len = 1e10
         self.penalty = 1
-    def update(self, foods, pheromone):
-        def pheromone_affinity(possible_cord, pheromone):
+    def update(self, foods, nests, pheromone_food, pheromone_nest, obstacles):
+        def pheromone_affinity(possible_cord, pheromone, current):
             if pheromone.centroid:
-                p = np.array(possible_cord)
-                p = np.abs(p-pheromone.centroid).sum(axis=1)
+                p = np.abs((possible_cord+current)-pheromone.centroid).sum(axis=1)
                 p = p.max() - p
                 return p
             else:
-                return [1]*8
-            # arr = np.array(possible_cord)
-            # try:
-            #     return pheromone.table[tuple(arr.T)]*1000+1
-            # except IndexError:
-            #     return [1]*8
+                return np.array([1]*8)
         if self.status == 'finding':
             '''encourage ants to move out of their nest'''
             possible_cord = []
             x, y = self.rect.center
-            [possible_cord.append(cord) for i in map(lambda z: [(x+z, y+c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
-            possible_cord.remove((x, y))
-            choice = random.choices(possible_cord, weights=pheromone_affinity(possible_cord, pheromone))
-            self.rect.center = choice[0]
-            self.route.append(self.rect.center)
+            [possible_cord.append(cord) for i in map(lambda z: [(z, c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
+            possible_cord.remove((0, 0))
+            possible_cord = np.array(possible_cord)
+            weights = pheromone_affinity(possible_cord, pheromone_food, np.array([x, y]))
+            while weights.any()!=0:
+                choice = random.choices(possible_cord, weights)
+                index = np.where(possible_cord==choice)[0]
+                # if pheromone_food.centroid and ((x-pheromone_food.centroid[0])**2 + (y-pheromone_food.centroid[1])**2)**(1/2) < 100:
+                #     c_x = choice[0][0]
+                #     c_y = choice[0][1]
+                # else:
+                c_x = 0.9*self.velocity[0]+smoothness*choice[0][0]
+                c_y = 0.9*self.velocity[1]+smoothness*choice[0][1]
+                self.velocity = (c_x, c_y)
+                self.rect.center = (x+self.velocity[0], y+self.velocity[1])
+                # print(weights)
+                weights[index] = 0
+                if not pg.sprite.spritecollideany(self, obstacles):
+                    break
             if self.rect.center[0]>=800 or self.rect.center[0]<0 or self.rect.center[1]>=800 or self.rect.center[1] < 0:
                 self.kill()
                 return
         elif self.status == 'found':
-            try:
-                self.rect.center = self.route.pop()
-                self.penalty *= (1-penalty_away_food)
-            except IndexError: #returned nest
-                self.image = image.ant
-                self.status = 'finding'
-                self.tour_len = 1e10
-                self.penalty = 1
+            possible_cord = []
+            x, y = self.rect.center
+            [possible_cord.append(cord) for i in map(lambda z: [(z, c) for c in (-1*step,0,step)], (-1*step,0,step)) for cord in i]
+            possible_cord.remove((0, 0))
+            possible_cord = np.array(possible_cord)
+            weights = pheromone_affinity(possible_cord, pheromone_nest, np.array([x, y]))
+            while weights.any()!=0:
+                choice = random.choices(possible_cord, weights)
+                index = np.where(possible_cord==choice)[0]
+                # if pheromone_food.centroid and ((x-pheromone_nest.centroid[0])**2 + (y-pheromone_nest.centroid[1])**2)**(1/2) < 100:
+                #     c_x = choice[0][0]
+                #     c_y = choice[0][1]
+                # else:
+                c_x = 0.9*self.velocity[0]+smoothness*choice[0][0]
+                c_y = 0.9*self.velocity[1]+smoothness*choice[0][1]
+                self.velocity = (c_x, c_y)
+                self.rect.center = (x+self.velocity[0], y+self.velocity[1])
+                # print(weights)
+                weights[index] = 0
+                if not pg.sprite.spritecollideany(self, obstacles):
+                    break
+            if self.rect.center[0]>=800 or self.rect.center[0]<0 or self.rect.center[1]>=800 or self.rect.center[1] < 0:
+                self.kill()
+                return
 
-        for food in foods:
-            if pg.sprite.collide_rect(self, food):
-                self.image = image.ant_with_food
-                self.status = 'found'
-                self.tour_len = len(self.route)
-
+        self.penalty *= (1-penalty_away)
+        if self.status == 'finding':
+            for food in foods:
+                if pg.sprite.collide_rect(self, food):
+                    self.image = image.ant_with_food
+                    self.status = 'found'
+                    self.penalty = 1
+                    self.velocity = (0, 0)
+        elif self.status == 'found':
+            for nest in nests:
+                if pg.sprite.collide_rect(self, nest):
+                    self.image = image.ant
+                    self.status = 'finding'
+                    self.penalty = 1
+                    self.velocity = (0, 0)
 class Food(pg.sprite.Sprite):
     '''
     Object Food is food with different amount and size(based on amount).
@@ -99,11 +133,11 @@ class Nest(pg.sprite.Sprite):
 
 class Obstacle(pg.sprite.Sprite):
     '''
-    Object Obstable is a obstable. Don't hit it!!
+    Object Obstable is a obstacle. Don't hit it!!
     '''
     def __init__(self, position, size):
         super().__init__()
-        self.image = obstacle.ant
+        self.image = pg.transform.scale(image.obstacle, (size, size))
         self.rect = self.image.get_rect()
         self.rect.center = position
         self.size = size
@@ -112,7 +146,7 @@ class Pheromone:
     def __init__(self):
         self.table = np.zeros((world_size, world_size))
         self.centroid = None
-    def update(self, ants):
+    def update(self, ants, status):
         def gaussian_kernel(size, sigma):
             x =np.linspace(-sigma, sigma, size+1)
             kernel1d = np.diff(stats.norm.cdf(x))
@@ -120,14 +154,13 @@ class Pheromone:
             return kernel2d/kernel2d.sum()
         τ, ρ, sum = self.table, decay_rate, np.zeros((world_size, world_size))
         for ant in ants:
-            if ant.status == 'found':
+            if ant.status == status:
                 x, y = ant.rect.center
                 try:
                     k = 1
-                    sum[x-(k//2)*step:x+(k//2+1)*step, y-(k//2)*step:y+(k//2+1)*step] += 1/ant.tour_len*gaussian_kernel(k*step, 1)*ant.penalty
+                    sum[x-(k//2)*step:x+(k//2+1)*step, y-(k//2)*step:y+(k//2+1)*step] += gaussian_kernel(k*step, 1)*ant.penalty
                 except ValueError:
                     print('border')
-                # sum[x, y] += 1/ant.tour_len
         τ = (1-ρ)*τ + ρ*sum/num_ants
         self.table = τ
         self.update_centroid()

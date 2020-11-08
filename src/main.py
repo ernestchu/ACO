@@ -16,7 +16,7 @@ def initialize(num_ant, *args):
     args[1].add(objects.Food((random.randrange(0, objects.world_size), random.randrange(0, objects.world_size)), 50))
     args[2].add(objects.Nest((nest_x, nest_y), 50))
 
-def draw_pheromone(pheromone, surface):
+def draw_pheromone(pheromone, surface, color):
     table = pheromone.table
     #normalizing
     intensity = (table-table.min())/table.max()-table.min()
@@ -27,7 +27,8 @@ def draw_pheromone(pheromone, surface):
         #expand from (128-255) to (0-255)
         opacity = intensity[i, j]*2-255
         sub_surf = pg.Surface(pg.Rect(i, j, objects.step, objects.step).size, pg.SRCALPHA)
-        pg.draw.rect(sub_surf, (0, 255, 0, opacity), sub_surf.get_rect())
+        r, g, b = color
+        pg.draw.rect(sub_surf, (r, g, b, opacity), sub_surf.get_rect())
         # surface.blit(sub_surf, (i, j, objects.step, objects.step))
         surface.blit(sub_surf, (i, j, objects.step, objects.step))
 
@@ -44,7 +45,9 @@ pg.display.update()
 ants = pg.sprite.Group()
 foods = pg.sprite.Group()
 nests = pg.sprite.Group()
-pheromone = objects.Pheromone()
+obstacles = pg.sprite.Group()
+pheromone_food = objects.Pheromone()
+pheromone_nest = objects.Pheromone()
 initialize(objects.num_ants, ants, foods, nests)
 foods.draw(surface)
 ants.draw(surface)
@@ -59,14 +62,22 @@ while True:
         elif event.type == pg.KEYDOWN: #press blankspace to start/pause
             if event.key == pg.K_SPACE:
                  start = not start
+        elif event.type == pg.MOUSEBUTTONDOWN:
+            obstacles.add(objects.Obstacle(event.pos, 50))
+        elif event.type == pg.MOUSEMOTION:
+            if event.buttons[0] == 1:
+                obstacles.add(objects.Obstacle(event.pos, 50))
     if start:
         surface.blit(background, (0, 0))
-        ants.update(foods, pheromone)
-        pheromone.update(ants)
+        ants.update(foods, nests, pheromone_food, pheromone_nest, obstacles)
+        pheromone_food.update(ants, 'found')
+        pheromone_nest.update(ants, 'finding')
         ants.clear(surface, background)
-        draw_pheromone(pheromone, surface)
+        draw_pheromone(pheromone_food, surface, (0, 255, 0))
+        draw_pheromone(pheromone_nest, surface, (255, 0, 0))
         foods.draw(surface)
         ants.draw(surface)
         nests.draw(surface)
+        obstacles.draw(surface)
         pg.display.update()
         pg.time.wait(objects.wait)
