@@ -2,7 +2,7 @@ import pygame as pg
 import random
 import numpy as np
 from scipy import stats
-from math import floor
+import math
 
 step = 10
 wait = 20
@@ -40,6 +40,13 @@ class Ant(pg.sprite.Sprite):
                 return p
             else:
                 return np.array([1]*8)
+        def rotate(origin, point, angle):
+            ox, oy = origin
+            px, py = point
+            qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
+            qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
+            return (qx, qy)
+
         pheromone_dict = {'finding': pheromone_food, 'found': pheromone_nest}
         '''encourage ants to move out of their nest'''
         possible_cord = []
@@ -48,20 +55,18 @@ class Ant(pg.sprite.Sprite):
         possible_cord.remove((0, 0))
         possible_cord = np.array(possible_cord)
         weights = pheromone_affinity(possible_cord, pheromone_dict[self.status], np.array([x, y]))
-        while weights.any()!=0:
-            choice = random.choices(possible_cord, weights)
-            index = np.where(possible_cord==choice)[0]
-            c_x = 0.9*self.velocity[0]+smoothness*choice[0][0]
-            c_y = 0.9*self.velocity[1]+smoothness*choice[0][1]
-            self.velocity = (c_x, c_y)
-            self.rect.center = (x+self.velocity[0], y+self.velocity[1])
-            weights[index] = 0
-            if not pg.sprite.spritecollideany(self, obstacles):
-                break
+        choice = random.choices(possible_cord, weights)
+        index = np.where(possible_cord==choice)[0]
+        c_x = 0.9*self.velocity[0]+smoothness*choice[0][0]
+        c_y = 0.9*self.velocity[1]+smoothness*choice[0][1]
+        self.velocity = (c_x, c_y)
+        self.rect.center = (x+self.velocity[0], y+self.velocity[1])
+        if pg.sprite.spritecollideany(self, obstacles):
+            self.rect.center = rotate((x, y), self.rect.center, math.radians(270))
         if self.rect.center[0]>=800 or self.rect.center[0]<0 or self.rect.center[1]>=800 or self.rect.center[1] < 0:
             self.kill()
             return
-            
+
         self.penalty *= (1-penalty_away)
 
         if self.status == 'finding':
@@ -108,7 +113,7 @@ class Obstacle(pg.sprite.Sprite):
     '''
     def __init__(self, position, size):
         super().__init__()
-        self.image = pg.transform.scale(image.obstacle, (size, size))
+        self.image = pg.transform.scale(image.obstacle, (size, size*5))
         self.rect = self.image.get_rect()
         self.rect.center = position
         self.size = size
