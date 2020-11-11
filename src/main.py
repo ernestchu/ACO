@@ -13,7 +13,8 @@ def initialize(num_ant, *args):
     nest_x, nest_y = objects.world_size/2, objects.world_size/2
     for i in range(num_ant):
         args[0].add(objects.Ant((nest_x, nest_y), "finding"))
-    args[1].add(objects.Food((random.randrange(0, objects.world_size), random.randrange(0, objects.world_size)), 50))
+    # args[1].add(objects.Food((random.randrange(0, objects.world_size), random.randrange(0, objects.world_size)), 50))
+    args[1].add(objects.Food((100, 100), 50))
     args[2].add(objects.Nest((nest_x, nest_y), 50))
 
 def draw_pheromone(pheromone, surface, color):

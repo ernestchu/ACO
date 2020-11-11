@@ -4,8 +4,8 @@ import numpy as np
 from scipy import stats
 import math
 
-step = 10
-wait = 20
+step = 5
+wait = 10
 world_size = 800
 num_ants = 100
 decay_rate = 0.01
@@ -113,7 +113,7 @@ class Obstacle(pg.sprite.Sprite):
     '''
     def __init__(self, position, size):
         super().__init__()
-        self.image = pg.transform.scale(image.obstacle, (size, size*5))
+        self.image = pg.transform.scale(image.obstacle, (size, size))
         self.rect = self.image.get_rect()
         self.rect.center = position
         self.size = size
