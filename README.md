@@ -9,3 +9,5 @@ This program simulate the behavior of ants. The idea behind is the ant colony op
 
     cd src
     python3 main.py
+
+### Click on the ground to generate obstacles
